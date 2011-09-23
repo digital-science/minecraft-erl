@@ -66,17 +66,12 @@ connect_local(User, Password) ->
 
 init([]) ->
     process_flag(trap_exit, true),
-    %%io:format("Connecting to ~s~n", [MinecraftHost]),
-    %%{ok, Socket} = gen_tcp:connect(MinecraftHost, 25565, [binary, {packet, 0}]),
-    %%o:format("Socket: ~p~n", [Socket]),
     {ok, #state{listeners = []}}.
 
 handle_call({connect, IP, Port}, _From, State) ->
     case gen_tcp:connect(IP, Port, [binary, {active, once}]) of
         {ok, Socket} ->
-            %gen_tcp:controlling_process(Socket, ?MODULE),
             NewState = State#state{socket=Socket},
-            io:format("Socket ar: ~p~n", [Socket]),
             {reply, ok, NewState};
         {error, Reason} ->
             {reply, {error, Reason}, State}
@@ -94,9 +89,12 @@ handle_cast(_Msg, State) ->
 
 handle_info({tcp, _, ?HANDSHAKE_PATTERN}, State = #state{session_id = SessionID, user = User}) ->
     StringHash = minecraft:utf16_binary_to_list(Hash),
-    io:format("Handshake hash: ~p~n", [StringHash]),
     case httpc:request(get,
-                       {lists:flatten(io_lib:format("http://session.minecraft.net/game/joinserver.jsp?user=~s&sessionId=~s&serverId=~s", [User, SessionID, StringHash])), []}, [], []) of
+                       {lists:flatten( io_lib:format(
+													"http://session.minecraft.net/game/joinserver.jsp?user=~s&sessionId=~s&serverId=~s",
+													[User, SessionID, StringHash])),
+													[]},
+												[], []) of
         {ok, {{_, 200, _}, _, Body}} ->
             io:format("Body: ~p~n", [Body])
     end,
