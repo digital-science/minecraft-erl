@@ -20,7 +20,7 @@
 %% ------------------------------------------------------------------
 
 -export([start_link/0]).
--export([start/0, connect/2, connect_local/0]).
+-export([start/0, connect/4, connect_local/2]).
 
 %% ------------------------------------------------------------------
 %% gen_server Function Exports
@@ -49,16 +49,16 @@ start_link() ->
 start() ->
     start_link().
 
-connect(IP, Port) ->
+connect(IP, Port, User, Password) ->
     gen_server:call(?MODULE, {connect, IP, Port}),
-    case minecraft:login_request("user", "password") of
+    case minecraft:login_request(User, Password) of
         {ok, {{_, 200, _}, _, Body}} ->
             [_,_,_,SessionID] = string:tokens(Body, ":")
     end,
-    gen_server:cast(?MODULE, {handshake_user, "spanx75", SessionID}).
+    gen_server:cast(?MODULE, {handshake_user, User, SessionID}).
 
-connect_local() ->
-    connect("127.0.0.1", 25565).
+connect_local(User, Password) ->
+    connect("127.0.0.1", 25565, User, Password).
 
 %% ------------------------------------------------------------------
 %% gen_server Function Definitions
